@@ -56,6 +56,7 @@ public class PickupSensor implements SensorEventListener {
         mContext = context;
         mSensorManager = mContext.getSystemService(SensorManager.class);
         mSensor = DozeUtils.getSensor(mSensorManager, "xiaomi.sensor.pickup");
+        mProximitySensor = mSensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY, false);
         mPowerManager = (PowerManager) mContext.getSystemService(Context.POWER_SERVICE);
         mWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
         mExecutorService = Executors.newSingleThreadExecutor();
@@ -77,7 +78,11 @@ public class PickupSensor implements SensorEventListener {
 
         mEntryTimestamp = SystemClock.elapsedRealtime();
 
-        if (event.values[0] == 1) {
+        if (!isRaiseToWake && !DozeUtils.isPocketGestureEnabled(mContext)) {
+            mInsidePocket = false;
+        }
+
+        if (event.values[0] == 1 && !mInsidePocket) {
             if (isRaiseToWake) {
                 mWakeLock.acquire(WAKELOCK_TIMEOUT_MS);
                 mPowerManager.wakeUp(SystemClock.uptimeMillis(),
